@@ -1,6 +1,7 @@
 # Creator Opportunity Prototype
 
 One-page Astro prototype for the Gates Higher Endeavor technical assessment. It helps a Head of Creator Partnerships quickly decide where to focus in a TikTok trending dataset, then ask grounded follow-up questions.
+![alt text](<127.0.0.1_4321_full size partner dashboard.png>)
 
 ## What It Does
 
@@ -9,6 +10,28 @@ One-page Astro prototype for the Gates Higher Endeavor technical assessment. It 
 - Keeps verified and celebrity-scale creators visible as reach benchmarks, without letting status automatically drive priority.
 - Supports plain-English follow-up questions for creators, engagement, reach benchmarks, content themes, objective spreadsheet lookups, and data limitations.
 - Works without an AI model by returning local deterministic answers; OpenAI or Claude can optionally rephrase those grounded answers.
+
+## Run Locally
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Open `http://127.0.0.1:4321/`.
+
+Model phrasing is optional. To enable it, copy `.env.example` to `.env` and set one provider's credentials:
+
+```env
+LLM_PROVIDER=auto
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-5-mini
+ANTHROPIC_API_KEY=
+ANTHROPIC_AUTH_TOKEN=
+ANTHROPIC_MODEL=claude-haiku-4-5-20251001
+```
+
+`LLM_PROVIDER=auto` tries OpenAI first when `OPENAI_API_KEY` is present, then Claude when `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` is present. Set `LLM_PROVIDER=openai` or `LLM_PROVIDER=anthropic` to force a provider. Use `ANTHROPIC_AUTH_TOKEN` only when intentionally reusing a Claude Code-style bearer token, and do not set both Anthropic credential types at the same time.
 
 ## Scoring Approach
 
@@ -73,27 +96,6 @@ Supported intents:
 
 Unsupported questions are a first-class path. If the CSV cannot answer something, such as follower counts, audience demographics, creator availability, location, current status, or brand-safety review, the app says what data is missing instead of letting the model guess.
 
-## Run Locally
-
-```bash
-pnpm install
-pnpm dev
-```
-
-Open `http://127.0.0.1:4321/`.
-
-Model phrasing is optional. To enable it, copy `.env.example` to `.env` and set one provider's credentials:
-
-```env
-LLM_PROVIDER=auto
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-5-mini
-ANTHROPIC_API_KEY=
-ANTHROPIC_AUTH_TOKEN=
-ANTHROPIC_MODEL=claude-haiku-4-5-20251001
-```
-
-`LLM_PROVIDER=auto` tries OpenAI first when `OPENAI_API_KEY` is present, then Claude when `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` is present. Set `LLM_PROVIDER=openai` or `LLM_PROVIDER=anthropic` to force a provider. Use `ANTHROPIC_AUTH_TOKEN` only when intentionally reusing a Claude Code-style bearer token, and do not set both Anthropic credential types at the same time.
 
 ## With More Time
 
