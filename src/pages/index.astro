@@ -209,7 +209,13 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
             body: JSON.stringify({ question: question.value })
           });
           const result = await response.json();
-          answerTitle.textContent = result.usedModel ? `${result.title} · model phrased` : `${result.title} · local fallback`;
+          const providerLabel =
+            result.modelProvider === "anthropic"
+              ? "Claude phrased"
+              : result.modelProvider === "openai"
+                ? "OpenAI phrased"
+                : "local fallback";
+          answerTitle.textContent = `${result.title} · ${providerLabel}`;
           answer.textContent = result.answer;
           answerMeta.textContent = `Caveat: ${result.caveat} Suggested follow-up: ${result.suggestedFollowup}`;
           renderRows(result.rows);

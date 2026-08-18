@@ -22,7 +22,8 @@ export const POST: APIRoute = async ({ request }) => {
         caveat: error instanceof Error ? error.message : "Unknown error",
         rows: [],
         suggestedFollowup: "Who should we reach out to first?",
-        usedModel: false
+        usedModel: false,
+        modelProvider: "local"
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );

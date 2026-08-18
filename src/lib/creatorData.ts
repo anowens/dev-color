@@ -57,6 +57,7 @@ export type QueryResult = {
   rows: Record<string, string | number | boolean>[];
   suggestedFollowup: string;
   usedModel: boolean;
+  modelProvider: "local" | "openai" | "anthropic";
 };
 
 const csvPath = path.join(process.cwd(), "src", "data", "2026datathon_interview_data.csv");
@@ -325,7 +326,8 @@ export function runQuery(question: string): QueryResult {
       caveat,
       rows: [],
       suggestedFollowup: "Which creators look strongest by engagement efficiency?",
-      usedModel: false
+      usedModel: false,
+      modelProvider: "local"
     };
   }
 
@@ -337,7 +339,8 @@ export function runQuery(question: string): QueryResult {
       caveat,
       rows: [],
       suggestedFollowup: "Who should we reach out to first?",
-      usedModel: false
+      usedModel: false,
+      modelProvider: "local"
     };
   }
 
@@ -350,7 +353,8 @@ export function runQuery(question: string): QueryResult {
       caveat,
       rows: [],
       suggestedFollowup: "Which creators are strongest despite those limits?",
-      usedModel: false
+      usedModel: false,
+      modelProvider: "local"
     };
   }
 
@@ -364,7 +368,8 @@ export function runQuery(question: string): QueryResult {
       caveat,
       rows,
       suggestedFollowup: "Which mid-tail creators should we prioritize instead?",
-      usedModel: false
+      usedModel: false,
+      modelProvider: "local"
     };
   }
 
@@ -377,7 +382,8 @@ export function runQuery(question: string): QueryResult {
       caveat,
       rows: dashboard.themes.map((theme) => ({ theme })),
       suggestedFollowup: "Which creators represent those themes best?",
-      usedModel: false
+      usedModel: false,
+      modelProvider: "local"
     };
   }
 
@@ -395,7 +401,8 @@ export function runQuery(question: string): QueryResult {
       caveat,
       rows,
       suggestedFollowup: "Which of these are best partnership prospects overall?",
-      usedModel: false
+      usedModel: false,
+      modelProvider: "local"
     };
   }
 
@@ -411,11 +418,24 @@ export function runQuery(question: string): QueryResult {
     caveat,
     rows,
     suggestedFollowup: "Why are these ranked above higher-reach creators?",
-    usedModel: false
+    usedModel: false,
+    modelProvider: "local"
   };
 }
 
-export async function summarizeWithModel(question: string, result: QueryResult): Promise<QueryResult> {
+function promptPayload(question: string, result: QueryResult) {
+  return JSON.stringify({ question, query_result: result });
+}
+
+function systemPrompt() {
+  return "You answer a busy Head of Creator Partnerships. Use only the provided query result. Be concise, plain-English, and include one caveat. Do not invent follower counts, demographics, current creator status, or unsupported claims.";
+}
+
+function providerPreference() {
+  return (import.meta.env.LLM_PROVIDER ?? process.env.LLM_PROVIDER ?? "auto").toLowerCase();
+}
+
+async function summarizeWithOpenAI(question: string, result: QueryResult): Promise<QueryResult> {
   const apiKey = import.meta.env.OPENAI_API_KEY ?? process.env.OPENAI_API_KEY;
   if (!apiKey) return result;
 
@@ -430,12 +450,11 @@ export async function summarizeWithModel(question: string, result: QueryResult):
       input: [
         {
           role: "system",
-          content:
-            "You answer a busy Head of Creator Partnerships. Use only the provided query result. Be concise, plain-English, and include one caveat. Do not invent follower counts, demographics, current creator status, or unsupported claims."
+          content: systemPrompt()
         },
         {
           role: "user",
-          content: JSON.stringify({ question, query_result: result })
+          content: promptPayload(question, result)
         }
       ]
     })
@@ -446,5 +465,66 @@ export async function summarizeWithModel(question: string, result: QueryResult):
   const text = data.output_text || data.output?.flatMap((item: any) => item.content ?? []).map((item: any) => item.text).join("\n");
   if (!text) return result;
 
-  return { ...result, answer: text, usedModel: true };
+  return { ...result, answer: text, usedModel: true, modelProvider: "openai" };
+}
+
+async function summarizeWithAnthropic(question: string, result: QueryResult): Promise<QueryResult> {
+  const apiKey = import.meta.env.ANTHROPIC_API_KEY ?? process.env.ANTHROPIC_API_KEY;
+  const authToken = import.meta.env.ANTHROPIC_AUTH_TOKEN ?? process.env.ANTHROPIC_AUTH_TOKEN;
+  if (!apiKey && !authToken) return result;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "anthropic-version": "2023-06-01"
+  };
+
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`;
+    headers["anthropic-beta"] = "oauth-2025-04-20";
+  } else {
+    headers["x-api-key"] = apiKey;
+  }
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model: import.meta.env.ANTHROPIC_MODEL ?? process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001",
+      max_tokens: 700,
+      system: systemPrompt(),
+      messages: [
+        {
+          role: "user",
+          content: promptPayload(question, result)
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) return result;
+  const data = await response.json();
+  const text = data.content
+    ?.filter((item: any) => item.type === "text")
+    .map((item: any) => item.text)
+    .join("\n");
+  if (!text) return result;
+
+  return { ...result, answer: text, usedModel: true, modelProvider: "anthropic" };
+}
+
+export async function summarizeWithModel(question: string, result: QueryResult): Promise<QueryResult> {
+  const provider = providerPreference();
+
+  if (provider === "anthropic" || provider === "claude") {
+    return summarizeWithAnthropic(question, result);
+  }
+
+  if (provider === "openai") {
+    return summarizeWithOpenAI(question, result);
+  }
+
+  const openAiResult = await summarizeWithOpenAI(question, result);
+  if (openAiResult.usedModel) return openAiResult;
+
+  return summarizeWithAnthropic(question, result);
 }
