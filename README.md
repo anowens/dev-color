@@ -8,8 +8,8 @@ One-page Astro prototype for the Gates Higher Endeavor technical assessment. The
 - Ranks creator partnership prospects using deterministic scoring.
 - Keeps verified and celebrity-scale creators visible as reach benchmarks without letting that status automatically drive the outreach priority.
 - Lets a user ask natural-language questions about creators, engagement, reach benchmarks, content themes, and data limitations.
-- Uses local deterministic answers when `OPENAI_API_KEY` is not configured.
-- Uses OpenAI to phrase the final answer when `OPENAI_API_KEY` is present.
+- Uses local deterministic answers when no model credentials are configured.
+- Uses OpenAI or Claude to phrase the final answer when model credentials are present.
 
 ## Definition Of Promising
 
@@ -63,7 +63,7 @@ Verified and celebrity-scale creators are still shown, but they appear as benchm
 User question
 → classify into a supported intent
 → run a deterministic query over precomputed CSV metrics
-→ optionally ask gpt-5-mini to summarize the query result
+→ optionally ask OpenAI or Claude to summarize the query result
 → return a plain-English answer, caveat, supporting rows, and suggested follow-up
 ```
 
@@ -102,7 +102,20 @@ pnpm dev
 
 Open `http://127.0.0.1:4321/`.
 
-To enable live model phrasing, copy `.env.example` to `.env` and set `OPENAI_API_KEY`.
+To enable live model phrasing, copy `.env.example` to `.env` and set one provider's credentials.
+
+```env
+LLM_PROVIDER=auto
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-5-mini
+ANTHROPIC_API_KEY=
+ANTHROPIC_AUTH_TOKEN=
+ANTHROPIC_MODEL=claude-haiku-4-5-20251001
+```
+
+`LLM_PROVIDER=auto` tries OpenAI first when `OPENAI_API_KEY` is present, then Claude when `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` is present. Set `LLM_PROVIDER=openai` or `LLM_PROVIDER=anthropic` to force a provider.
+
+Use `ANTHROPIC_API_KEY` for a Claude API key. Use `ANTHROPIC_AUTH_TOKEN` only when you intentionally want to reuse a Claude Code-style bearer token. Do not set both Anthropic credential types at the same time.
 
 ## What I Would Improve With More Time
 
