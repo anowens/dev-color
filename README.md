@@ -48,24 +48,30 @@ creator_score =
 
 ## Creator Context Labels
 
-Each creator gets a visible context label:
+Each creator is classified internally so verified or celebrity-scale creators can be handled as reach benchmarks instead of automatic outreach priorities.
 
 - `unverified - mid-tail prospect`
 - `unverified - emerging signal`
 - `verified - reach benchmark`
 - `celebrity-scale benchmark`
 
-Verified and celebrity-scale creators are still shown, but they appear as benchmarks rather than the default outreach list. This makes it clear they were considered without allowing raw fame to answer the whole strategy question.
+The main screen shows creator topic tags such as `#kenma` or `#attackontitan` in the ranked list because those are useful to the Head of Creator Partnerships. Repeated unverified prospect labels are hidden from the main screen because all ranked outreach candidates share that broad classification. Verified and celebrity-scale creators are still shown as benchmarks rather than the default outreach list, so it is clear they were considered without allowing raw fame to answer the whole strategy question.
 
 ## Q&A Flow
 
-```text
-User question
-→ classify into a supported intent
-→ run a deterministic query over precomputed CSV metrics
-→ optionally ask OpenAI or Claude to summarize the query result
-→ return a plain-English answer, caveat, supporting rows, and suggested follow-up
+```mermaid
+flowchart TD
+  A[User asks a follow-up question] --> B[Classify the question intent]
+  B --> C[Run deterministic JavaScript query over precomputed CSV metrics]
+  C --> D[Create grounded query result with rows, caveat, and follow-up]
+  D --> E{Model credentials available?}
+  E -->|Yes| F[Ask OpenAI or Claude to phrase the answer]
+  E -->|No| G[Use local deterministic answer text]
+  F --> H[Show plain-English answer with supporting rows]
+  G --> H
 ```
+
+The Q&A panel starts empty on purpose. It should not show a draft answer before the user asks a question because that makes the prototype feel like a static mock instead of a working data tool.
 
 Supported intents:
 
