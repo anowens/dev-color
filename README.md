@@ -75,6 +75,8 @@ flowchart TD
 
 The Q&A panel starts empty on purpose. It should not show a draft answer before the user asks a question because that makes the prototype feel like a static mock instead of a working data tool.
 
+This is intentionally not an open-ended chatbot. The app first maps each question to a supported intent, then runs a deterministic CSV query. The LLM only phrases that grounded result. Questions outside the supported data fields return an unsupported or clarifying response instead of letting the model guess.
+
 The API returns a suggested follow-up, but the current screen keeps the visible response focused on the answer, a compact supporting table, and a small `Limit` note. The model is instructed not to repeat the caveat in the answer body because the interface displays that limitation separately.
 
 Supported intents:
