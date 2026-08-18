@@ -64,19 +64,24 @@ The main screen shows creator topic tags such as `#kenma` or `#attackontitan` in
 
 ```mermaid
 flowchart TD
-  A[User asks a follow-up question] --> B[Classify the question intent]
-  B --> C[Run deterministic JavaScript query over precomputed CSV metrics]
-  C --> D[Create grounded query result with rows, caveat, and follow-up]
-  D --> E{Model credentials available?}
-  E -->|Yes| F[Ask OpenAI or Claude to phrase the answer]
-  E -->|No| G[Use local deterministic answer text]
-  F --> H[Show answer, compact supporting table, and Limit note]
-  G --> H
+  A[User asks a follow-up question] --> B[Classify the question into a supported intent]
+  B --> C{Can the CSV answer this question?}
+  C -->|No| D[Return a clarifying or unsupported response]
+  C -->|Yes| E[Run deterministic JavaScript query over precomputed CSV metrics]
+  E --> F[Create exact local result with answer text, rows, caveat, and follow-up]
+  F --> G{Model credentials available?}
+  G -->|Yes| H[Optionally ask OpenAI or Claude to rephrase the grounded answer]
+  G -->|No| I[Keep the exact local answer text]
+  H --> J[Show answer, compact supporting table, and Limit note]
+  I --> J
+  D --> J
 ```
 
 The Q&A panel starts empty on purpose. It should not show a draft answer before the user asks a question because that makes the prototype feel like a static mock instead of a working data tool.
 
-This is intentionally not an open-ended chatbot. The app first maps each question to a supported intent, then runs a deterministic CSV query. The LLM only phrases that grounded result. Questions outside the supported data fields return an unsupported or clarifying response instead of letting the model guess.
+This is intentionally not an open-ended chatbot. The app first maps each question to a supported intent, then runs a deterministic CSV query. That query creates a complete local answer, including the supporting rows, so supported spreadsheet questions still work when no AI model is configured.
+
+The model is optional. When credentials are available, OpenAI or Claude can rephrase the already-grounded answer in friendlier language. When credentials are missing, the app shows the exact local answer text instead. Questions outside the supported data fields return an unsupported or clarifying response instead of letting the model guess.
 
 Objective spreadsheet questions use the same guardrail. For example, “Which creators have 3 or more videos?” maps to a deterministic creator-count query and returns exact grouped CSV rows without asking the model to reinterpret the answer.
 
