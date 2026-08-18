@@ -170,6 +170,69 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
       const answerRows = document.querySelector("#answer-rows");
       const examples = document.querySelectorAll(".example");
 
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function inlineMarkdown(value) {
+        return escapeHtml(value).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      }
+
+      function renderMarkdown(value) {
+        const lines = String(value).split(/\r?\n/);
+        const html = [];
+        let listType = null;
+
+        function closeList() {
+          if (listType) {
+            html.push(`</${listType}>`);
+            listType = null;
+          }
+        }
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            closeList();
+            continue;
+          }
+
+          const heading = trimmed.match(/^#{1,3}\s+(.+)$/);
+          const ordered = trimmed.match(/^\d+\.\s+(.+)$/);
+          const unordered = trimmed.match(/^[-*]\s+(.+)$/);
+
+          if (heading) {
+            closeList();
+            html.push(`<h3>${inlineMarkdown(heading[1])}</h3>`);
+          } else if (ordered) {
+            if (listType !== "ol") {
+              closeList();
+              listType = "ol";
+              html.push("<ol>");
+            }
+            html.push(`<li>${inlineMarkdown(ordered[1])}</li>`);
+          } else if (unordered) {
+            if (listType !== "ul") {
+              closeList();
+              listType = "ul";
+              html.push("<ul>");
+            }
+            html.push(`<li>${inlineMarkdown(unordered[1])}</li>`);
+          } else {
+            closeList();
+            html.push(`<p>${inlineMarkdown(trimmed)}</p>`);
+          }
+        }
+
+        closeList();
+        return html.join("");
+      }
+
       function formatValue(value) {
         if (typeof value === "number") {
           if (value > 1 && Number.isInteger(value)) return value.toLocaleString();
@@ -216,12 +279,12 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
                 ? "OpenAI phrased"
                 : "local fallback";
           answerTitle.textContent = `${result.title} · ${providerLabel}`;
-          answer.textContent = result.answer;
+          answer.innerHTML = renderMarkdown(result.answer);
           answerMeta.textContent = `Caveat: ${result.caveat} Suggested follow-up: ${result.suggestedFollowup}`;
           renderRows(result.rows);
         } catch (error) {
           answerTitle.textContent = "Q&A unavailable";
-          answer.textContent = "I could not reach the local Q&A route. Try refreshing the app, then ask about creators, engagement, reach benchmarks, content themes, or limitations.";
+          answer.innerHTML = renderMarkdown("I could not reach the local Q&A route. Try refreshing the app, then ask about creators, engagement, reach benchmarks, content themes, or limitations.");
           answerMeta.textContent = "Caveat: the page is loaded, but the server endpoint did not respond.";
           renderRows([]);
         } finally {
@@ -665,6 +728,30 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
 
   .answer p + p {
     margin-top: 8px;
+  }
+
+  .answer h3 {
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.25;
+    margin: 0 0 8px;
+  }
+
+  .answer ol,
+  .answer ul {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.42;
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+
+  .answer li {
+    margin: 5px 0;
+  }
+
+  .answer strong {
+    color: var(--ink);
   }
 
   .answer-rows {
