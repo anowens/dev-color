@@ -26,7 +26,6 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
               Ranked by reach, engagement efficiency, share/comment intent, and repeat signal.
             </p>
           </div>
-          <div class="context-pill">Decision screen for 20 min review</div>
         </header>
 
         <section class="recommendation" aria-labelledby="recommendation-heading">
@@ -37,11 +36,6 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
               Use verified and celebrity accounts as benchmarks. Prioritize creators
               with strong engagement per view and enough reach to justify outreach.
             </p>
-          </div>
-          <div class="confidence" aria-label="Strategy confidence score">
-            <span>Strategy confidence</span>
-            <strong>82</strong>
-            <p>Good prioritization signal, limited by missing follower and audience data.</p>
           </div>
         </section>
 
@@ -403,20 +397,7 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
     line-height: 1.45;
   }
 
-  .context-pill {
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 8px 11px;
-    font-size: 12px;
-    color: var(--muted);
-    background: var(--panel);
-    white-space: nowrap;
-  }
-
   .recommendation {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 190px;
-    gap: 20px;
     padding: 20px;
     background: var(--panel);
     border: 1px solid var(--line);
@@ -430,27 +411,6 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
     font-size: 24px;
     line-height: 1.15;
     margin-bottom: 10px;
-  }
-
-  .confidence {
-    border-left: 1px solid var(--line);
-    padding-left: 18px;
-    display: grid;
-    align-content: center;
-    gap: 8px;
-  }
-
-  .confidence span {
-    color: var(--muted);
-    font-size: 13px;
-  }
-
-  .confidence strong {
-    color: var(--green);
-    font-size: 48px;
-    line-height: 1;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
   }
 
   .metrics {
