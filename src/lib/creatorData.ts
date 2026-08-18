@@ -6,6 +6,7 @@ export type Intent =
   | "top_creators_by_engagement"
   | "high_reach_benchmarks"
   | "promising_content_themes"
+  | "creator_video_count"
   | "creator_lookup"
   | "data_limitations"
   | "clarify"
@@ -294,6 +295,7 @@ export function classifyQuestion(question: string): Intent {
   const q = question.toLowerCase();
   if (!q.trim()) return "clarify";
   if (/\b(demographic|demographics|location|age|gender|gen z|current|available|availability|followers|brand safety)\b/.test(q)) return "unsupported";
+  if (/\b(creators?|authors?|accounts?)\b/.test(q) && /\bvid\w*/.test(q) && /(\d+|one|two|three|four|five|six|seven|eight|nine|ten)/.test(q)) return "creator_video_count";
   if (/(limit|caveat|overclaim|missing|trust|honest)/.test(q)) return "data_limitations";
   if (/(engagement|engaged|interaction|comments|shares)/.test(q)) return "top_creators_by_engagement";
   if (/\b(billie|spencerx|celebrity|verified)\b|reach benchmark|high reach|why not/.test(q)) return "high_reach_benchmarks";
@@ -303,6 +305,30 @@ export function classifyQuestion(question: string): Intent {
   const creator = getCreators().find((item) => q.includes(item.name.toLowerCase()));
   if (creator) return "creator_lookup";
   return "clarify";
+}
+
+function numericWord(value: string) {
+  return (
+    {
+      one: 1,
+      two: 2,
+      three: 3,
+      four: 4,
+      five: 5,
+      six: 6,
+      seven: 7,
+      eight: 8,
+      nine: 9,
+      ten: 10
+    } as Record<string, number>
+  )[value];
+}
+
+function extractVideoThreshold(question: string) {
+  const q = question.toLowerCase();
+  const rawCount = q.match(/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b/)?.[1] ?? "2";
+  const count = Number(rawCount) || numericWord(rawCount) || 2;
+  return /\bmore than\b/.test(q) ? count + 1 : count;
 }
 
 function compactCreator(creator: CreatorSummary) {
@@ -388,6 +414,27 @@ export function runQuery(question: string): QueryResult {
       caveat,
       rows: dashboard.themes.map((theme) => ({ theme })),
       suggestedFollowup: "Which creators represent those themes best?",
+      usedModel: false,
+      modelProvider: "local"
+    };
+  }
+
+  if (intent === "creator_video_count") {
+    const threshold = extractVideoThreshold(question);
+    const rows = creators
+      .filter((creator) => creator.videos >= threshold)
+      .sort((a, b) => b.videos - a.videos || b.views - a.views || a.name.localeCompare(b.name))
+      .map(compactCreator);
+
+    return {
+      intent,
+      title: `Creators with ${threshold}+ videos`,
+      answer: rows.length
+        ? `${rows.length} creator${rows.length === 1 ? "" : "s"} have ${threshold} or more videos in the spreadsheet. The matching creators are listed in the table.`
+        : `No creators have ${threshold} or more videos in the spreadsheet.`,
+      caveat,
+      rows,
+      suggestedFollowup: "Which of these have the strongest engagement efficiency?",
       usedModel: false,
       modelProvider: "local"
     };
@@ -527,6 +574,8 @@ async function summarizeWithAnthropic(question: string, result: QueryResult): Pr
 }
 
 export async function summarizeWithModel(question: string, result: QueryResult): Promise<QueryResult> {
+  if (result.intent === "creator_video_count") return result;
+
   const provider = providerPreference();
 
   if (provider === "anthropic" || provider === "claude") {

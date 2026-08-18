@@ -124,8 +124,8 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
         <section class="qa-card compact">
           <h2>Good follow-ups</h2>
           <button type="button" class="example">Which unverified creators have high engagement above 100k views?</button>
+          <button type="button" class="example">Which creators have 3 or more videos?</button>
           <button type="button" class="example">What hashtags show repeat promise?</button>
-          <button type="button" class="example">Who is high reach but lower priority for outreach?</button>
         </section>
 
       </aside>
@@ -230,14 +230,16 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
         if (!Array.isArray(rows) || rows.length === 0) return;
 
         const table = document.createElement("table");
-        const keys = ["creator", "top_hashtags", "videos", "views", "avg_engagement_rate"].filter((key) => key in rows[0]);
+        const preferredKeys = ["creator", "top_hashtags", "videos", "views", "avg_engagement_rate"];
+        const keys = preferredKeys.filter((key) => key in rows[0]);
+        const visibleKeys = keys.length ? keys : Object.keys(rows[0]).slice(0, 5);
         table.innerHTML = `
           <thead>
-            <tr>${keys.map((key) => `<th>${escapeHtml(key.replaceAll("_", " "))}</th>`).join("")}</tr>
+            <tr>${visibleKeys.map((key) => `<th>${escapeHtml(key.replaceAll("_", " "))}</th>`).join("")}</tr>
           </thead>
           <tbody>
             ${rows
-              .map((row) => `<tr>${keys.map((key) => `<td>${escapeHtml(formatCell(key, row[key]))}</td>`).join("")}</tr>`)
+              .map((row) => `<tr>${visibleKeys.map((key) => `<td>${escapeHtml(formatCell(key, row[key]))}</td>`).join("")}</tr>`)
               .join("")}
           </tbody>
         `;
