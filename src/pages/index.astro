@@ -125,15 +125,10 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
           </label>
           <button type="button" id="answer-button">Answer from CSV</button>
           <div class="answer" aria-live="polite">
-            <p class="eyebrow">Draft answer</p>
-            <p id="answer-text">
-              reus.fx has less reach than celebrity-scale videos, but both clips performed
-              efficiently: about 466k total views and roughly 40% average engagement.
-              That makes them a strong partnership prospect if the goal is responsive
-              niche audiences rather than maximum raw reach.
-            </p>
+            <p class="eyebrow">Ready</p>
+            <p id="answer-text">Ask a follow-up to see an answer grounded in the CSV.</p>
             <div class="answer-rows" id="answer-rows" aria-label="Supporting rows"></div>
-            <p class="muted">Caveat: this does not prove follower size, audience fit, or current availability.</p>
+            <p class="muted">The app will show the caveat and supporting rows after it answers.</p>
           </div>
         </section>
 
@@ -144,14 +139,6 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
           <button type="button" class="example">Who is high reach but lower priority for outreach?</button>
         </section>
 
-        <section class="qa-card compact">
-            <h2>Data flow</h2>
-          <ol class="flow">
-            <li><span>1</span>Classify the question: creator, hashtag, content, or caveat.</li>
-            <li><span>2</span>Run a deterministic JavaScript query against precomputed metrics.</li>
-            <li><span>3</span>Let the model explain the result and include the limits.</li>
-          </ol>
-        </section>
       </aside>
     </main>
 
@@ -756,36 +743,6 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
     font-weight: 500;
     font-size: 13px;
     line-height: 1.3;
-  }
-
-  .flow {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: 9px;
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.35;
-  }
-
-  .flow li {
-    display: grid;
-    grid-template-columns: 24px minmax(0, 1fr);
-    gap: 9px;
-    align-items: start;
-  }
-
-  .flow span {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    background: var(--soft);
-    color: var(--ink);
-    font-size: 12px;
-    font-weight: 600;
   }
 
   @media (max-width: 1060px) {
