@@ -42,9 +42,11 @@ video_score =
 creator_score =
   0.55 * best_video_score +
   0.30 * average_video_score +
-  0.10 * consistency_bonus +
+  consistency_bonus +
   0.05 * engagement_rate
 ```
+
+`consistency_bonus` is capped at `0.10` before it is added to the creator score.
 
 ## Creator Context Labels
 
@@ -67,11 +69,13 @@ flowchart TD
   D --> E{Model credentials available?}
   E -->|Yes| F[Ask OpenAI or Claude to phrase the answer]
   E -->|No| G[Use local deterministic answer text]
-  F --> H[Show plain-English answer with supporting rows]
+  F --> H[Show answer, compact supporting table, and Limit note]
   G --> H
 ```
 
 The Q&A panel starts empty on purpose. It should not show a draft answer before the user asks a question because that makes the prototype feel like a static mock instead of a working data tool.
+
+The API returns a suggested follow-up, but the current screen keeps the visible response focused on the answer, a compact supporting table, and a small `Limit` note. The model is instructed not to repeat the caveat in the answer body because the interface displays that limitation separately.
 
 Supported intents:
 
@@ -88,7 +92,7 @@ Supported intents:
 
 The model is used for language, not math. The calculations come from deterministic code, and the model only explains the result. That keeps the experience natural while reducing hallucination risk.
 
-Unsupported questions are a first-class path. If the CSV cannot answer something, the app says what data is missing and suggests a safer follow-up.
+Unsupported questions are a first-class path. If the CSV cannot answer something, the app says what data is missing. The API also returns a safer suggested follow-up for future UI expansion.
 
 The CSV does not include:
 
@@ -125,7 +129,7 @@ Use `ANTHROPIC_API_KEY` for a Claude API key. Use `ANTHROPIC_AUTH_TOKEN` only wh
 
 ## What I Would Improve With More Time
 
-- Add a supporting-row table under every answer.
+- Improve supporting-row table formatting and coverage.
 - Add a brand-safety/manual-review checklist.
 - Add a CSV upload option.
 - Add stricter structured output for model-based intent classification.
