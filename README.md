@@ -8,6 +8,7 @@ One-page Astro prototype for the Gates Higher Endeavor technical assessment. The
 - Ranks creator partnership prospects using deterministic scoring.
 - Keeps verified and celebrity-scale creators visible as reach benchmarks without letting that status automatically drive the outreach priority.
 - Lets a user ask natural-language questions about creators, engagement, reach benchmarks, content themes, and data limitations.
+- Answers simple objective spreadsheet questions, such as which creators have at least a requested number of videos.
 - Uses local deterministic answers when no model credentials are configured.
 - Uses OpenAI or Claude to phrase the final answer when model credentials are present.
 
@@ -77,6 +78,8 @@ The Q&A panel starts empty on purpose. It should not show a draft answer before 
 
 This is intentionally not an open-ended chatbot. The app first maps each question to a supported intent, then runs a deterministic CSV query. The LLM only phrases that grounded result. Questions outside the supported data fields return an unsupported or clarifying response instead of letting the model guess.
 
+Objective spreadsheet questions use the same guardrail. For example, “Which creators have 3 or more videos?” maps to a deterministic creator-count query and returns exact grouped CSV rows without asking the model to reinterpret the answer.
+
 The API returns a suggested follow-up, but the current screen keeps the visible response focused on the answer, a compact supporting table, and a small `Limit` note. The model is instructed not to repeat the caveat in the answer body because the interface displays that limitation separately.
 
 Supported intents:
@@ -85,6 +88,7 @@ Supported intents:
 - `top_creators_by_engagement`
 - `high_reach_benchmarks`
 - `promising_content_themes`
+- `creator_video_count`
 - `creator_lookup`
 - `data_limitations`
 - `clarify`
