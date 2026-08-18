@@ -1,0 +1,893 @@
+---
+import { getDashboardData } from "../lib/creatorData";
+
+const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Creator Partnership Focus</title>
+    <meta
+      name="description"
+      content="One-page creator opportunity prototype for a TikTok partnership strategy assessment."
+    />
+  </head>
+  <body>
+    <main class="screen" aria-label="Creator opportunity dashboard">
+      <section class="content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Gates Higher Endeavor technical assessment</p>
+            <h1>Creator partnership focus</h1>
+          </div>
+        </header>
+
+        <section class="recommendation" aria-labelledby="recommendation-heading">
+          <div>
+            <p class="eyebrow" id="recommendation-heading">Top recommendation</p>
+            <h2>Focus on mid-tail creators with high audience response, not celebrity reach alone.</h2>
+            <p>
+              Use verified and celebrity accounts as benchmarks. Prioritize creators
+              with strong engagement per view and enough reach to justify outreach.
+            </p>
+          </div>
+        </section>
+
+        <section class="metrics" aria-label="Dataset overview">
+          {metrics.map(([value, label]) => (
+            <div class="metric">
+              <strong>{value}</strong>
+              <span>{label}</span>
+            </div>
+          ))}
+        </section>
+
+        <section class="ranked" aria-labelledby="ranked-heading">
+          <div class="table-head" id="ranked-heading">
+            <span>Rank</span>
+            <span>Creator</span>
+            <span>Why focus here</span>
+            <span>Evidence</span>
+            <span>Score</span>
+          </div>
+
+          {creators.map((creator) => (
+            <article class="creator-row">
+              <div><span class="rank">{creator.rank}</span></div>
+              <div>
+                <strong>{creator.name}</strong>
+                <span>{creator.niche}</span>
+                {creator.contextKind === "benchmark" && <em class={`creator-context ${creator.contextKind}`}>{creator.context}</em>}
+              </div>
+              <p>{creator.why}</p>
+              <p class="muted">{creator.evidence}</p>
+              <div class="score-cell">
+                <div class="bar" aria-hidden="true">
+                  <span style={`width: ${creator.score}%`}></span>
+                </div>
+                <div class="score-label">
+                  <span>Opportunity</span>
+                  <strong>{creator.score}</strong>
+                </div>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section class="benchmarks" aria-labelledby="benchmarks-heading">
+          <div>
+            <p class="eyebrow" id="benchmarks-heading">Reach benchmarks</p>
+            <h2>Considered, but not the default outreach priority</h2>
+          </div>
+          <div class="benchmark-list">
+            {benchmarks.map((creator) => (
+              <article>
+                <strong>{creator.name}</strong>
+                <span>{creator.context}</span>
+                <p>{creator.evidence}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section class="lower" aria-label="Content themes and limits">
+          <div class="plain-panel">
+            <h2>Content areas to test</h2>
+            <div class="chips">
+              {themes.map((theme) => <span>{theme}</span>)}
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <aside class="qa" aria-label="Question and answer flow">
+        <section class="qa-card">
+          <div>
+            <h2>Ask the data</h2>
+            <p>Ask a follow-up to see an answer grounded in the CSV.</p>
+          </div>
+          <label>
+            <span>Follow-up question</span>
+            <textarea id="question">Why is reus.fx ranked above creators with more views?</textarea>
+          </label>
+          <button type="button" id="answer-button">Answer from CSV</button>
+          <div class="answer" aria-live="polite" hidden>
+            <p class="eyebrow"></p>
+            <p id="answer-text"></p>
+            <div class="answer-rows" id="answer-rows" aria-label="Supporting rows"></div>
+            <p class="limit-note"></p>
+          </div>
+        </section>
+
+        <section class="qa-card compact">
+          <h2>Good follow-ups</h2>
+          <button type="button" class="example">Which unverified creators have high engagement above 100k views?</button>
+          <button type="button" class="example">What hashtags show repeat promise?</button>
+          <button type="button" class="example">Who is high reach but lower priority for outreach?</button>
+        </section>
+
+      </aside>
+    </main>
+
+    <script>
+      const answerButton = document.querySelector("#answer-button");
+      const question = document.querySelector("#question");
+      const answer = document.querySelector("#answer-text");
+      const answerTitle = document.querySelector(".answer .eyebrow");
+      const answerMeta = document.querySelector(".answer .limit-note");
+      const answerRows = document.querySelector("#answer-rows");
+      const examples = document.querySelectorAll(".example");
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function inlineMarkdown(value) {
+        return escapeHtml(value).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      }
+
+      function renderMarkdown(value) {
+        const lines = String(value).split(/\r?\n/);
+        const html = [];
+        let listType = null;
+
+        function closeList() {
+          if (listType) {
+            html.push(`</${listType}>`);
+            listType = null;
+          }
+        }
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            closeList();
+            continue;
+          }
+
+          const heading = trimmed.match(/^#{1,3}\s+(.+)$/);
+          const ordered = trimmed.match(/^\d+\.\s+(.+)$/);
+          const unordered = trimmed.match(/^[-*]\s+(.+)$/);
+
+          if (heading) {
+            closeList();
+            html.push(`<h3>${inlineMarkdown(heading[1])}</h3>`);
+          } else if (ordered) {
+            if (listType !== "ol") {
+              closeList();
+              listType = "ol";
+              html.push("<ol>");
+            }
+            html.push(`<li>${inlineMarkdown(ordered[1])}</li>`);
+          } else if (unordered) {
+            if (listType !== "ul") {
+              closeList();
+              listType = "ul";
+              html.push("<ul>");
+            }
+            html.push(`<li>${inlineMarkdown(unordered[1])}</li>`);
+          } else {
+            closeList();
+            html.push(`<p>${inlineMarkdown(trimmed)}</p>`);
+          }
+        }
+
+        closeList();
+        return html.join("");
+      }
+
+      function formatValue(value) {
+        if (typeof value === "number") {
+          if (value > 1 && Number.isInteger(value)) return value.toLocaleString();
+          return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
+        }
+        return String(value);
+      }
+
+      function formatCompact(value) {
+        if (typeof value !== "number") return String(value);
+        if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}m`;
+        if (value >= 1_000) return `${(value / 1_000).toFixed(value >= 100_000 ? 0 : 1)}k`;
+        return String(Math.round(value));
+      }
+
+      function formatCell(key, value) {
+        if (key === "views" || key === "interactions") return formatCompact(value);
+        if (key === "avg_engagement_rate" && typeof value === "number") return `${(value * 100).toFixed(1)}%`;
+        return formatValue(value);
+      }
+
+      function renderRows(rows) {
+        if (!answerRows) return;
+        answerRows.innerHTML = "";
+        if (!Array.isArray(rows) || rows.length === 0) return;
+
+        const table = document.createElement("table");
+        const keys = ["creator", "top_hashtags", "videos", "views", "avg_engagement_rate"].filter((key) => key in rows[0]);
+        table.innerHTML = `
+          <thead>
+            <tr>${keys.map((key) => `<th>${escapeHtml(key.replaceAll("_", " "))}</th>`).join("")}</tr>
+          </thead>
+          <tbody>
+            ${rows
+              .map((row) => `<tr>${keys.map((key) => `<td>${escapeHtml(formatCell(key, row[key]))}</td>`).join("")}</tr>`)
+              .join("")}
+          </tbody>
+        `;
+        answerRows.append(table);
+      }
+
+      async function answerQuestion() {
+        answerButton.disabled = true;
+        answerButton.textContent = "Answering...";
+
+        try {
+          const response = await fetch("/api/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: question.value })
+          });
+          const result = await response.json();
+          const providerLabel =
+            result.modelProvider === "anthropic"
+              ? "Claude phrased"
+              : result.modelProvider === "openai"
+                ? "OpenAI phrased"
+                : "local fallback";
+          document.querySelector(".answer")?.removeAttribute("hidden");
+          answerTitle.textContent = `${result.title} · ${providerLabel}`;
+          answer.innerHTML = renderMarkdown(result.answer);
+          answerMeta.innerHTML = `<strong>Limit</strong><span>${escapeHtml(result.caveat)}</span>`;
+          renderRows(result.rows);
+        } catch (error) {
+          document.querySelector(".answer")?.removeAttribute("hidden");
+          answerTitle.textContent = "Q&A unavailable";
+          answer.innerHTML = renderMarkdown("I could not reach the local Q&A route. Try refreshing the app, then ask about creators, engagement, reach benchmarks, content themes, or limitations.");
+          answerMeta.innerHTML = "<strong>Limit</strong><span>The page loaded, but the server endpoint did not respond.</span>";
+          renderRows([]);
+        } finally {
+          answerButton.disabled = false;
+          answerButton.textContent = "Answer from CSV";
+        }
+      }
+
+      answerButton?.addEventListener("click", answerQuestion);
+      examples.forEach((example) => {
+        example.addEventListener("click", () => {
+          question.value = example.textContent ?? "";
+          answerQuestion();
+        });
+      });
+    </script>
+  </body>
+</html>
+
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f7f5ef;
+    --ink: #20231d;
+    --muted: #62685a;
+    --line: #d8d1c1;
+    --panel: #fffdf7;
+    --soft: #ece6d8;
+    --green: #2f6f4e;
+    --orange: #9a5a26;
+    --shadow: 0 20px 50px rgba(32, 35, 29, 0.08);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+  }
+
+  .screen {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    max-width: 1360px;
+    margin: 0 auto;
+    background: var(--bg);
+  }
+
+  .content {
+    padding: 28px;
+    min-width: 0;
+  }
+
+  .qa {
+    border-left: 1px solid var(--line);
+    background: rgba(255, 253, 247, 0.7);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  h1,
+  h2,
+  p {
+    margin: 0;
+  }
+
+  h1 {
+    font-size: 28px;
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+
+  h2 {
+    font-size: 16px;
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .eyebrow {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.2;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 7px;
+  }
+
+  .recommendation p,
+  .qa-card p,
+  .muted {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .recommendation {
+    padding: 20px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    margin-bottom: 18px;
+  }
+
+  .recommendation h2 {
+    max-width: 780px;
+    font-size: 24px;
+    line-height: 1.15;
+    margin-bottom: 10px;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .metric {
+    background: rgba(255, 253, 247, 0.75);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 13px;
+  }
+
+  .metric strong {
+    display: block;
+    font-size: 20px;
+    line-height: 1.1;
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .metric span {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.25;
+  }
+
+  .ranked {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 18px;
+  }
+
+  .table-head,
+  .creator-row {
+    display: grid;
+    grid-template-columns: 42px minmax(120px, 0.75fr) minmax(220px, 1.3fr) 150px 118px;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .table-head {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .creator-row {
+    padding: 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .creator-row:last-child {
+    border-bottom: 0;
+  }
+
+  .creator-row strong {
+    display: block;
+    font-size: 14px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .creator-context {
+    display: inline-block;
+    margin-top: 6px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 7px;
+    color: var(--ink);
+    font-size: 11px;
+    font-style: normal;
+    line-height: 1;
+    white-space: normal;
+  }
+
+  .creator-context.prospect {
+    background: rgba(47, 111, 78, 0.1);
+  }
+
+  .creator-context.benchmark {
+    background: rgba(154, 90, 38, 0.12);
+  }
+
+  .creator-row span,
+  .creator-row p {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .rank {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-grid;
+    place-items: center;
+    background: var(--soft);
+    color: var(--ink) !important;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bar {
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--soft);
+  }
+
+  .bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--green);
+  }
+
+  .score-label {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .score-label strong {
+    color: var(--ink);
+    font-size: 12px;
+  }
+
+  .benchmarks {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+    margin-bottom: 18px;
+  }
+
+  .benchmarks h2 {
+    margin-top: 0;
+  }
+
+  .benchmark-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .benchmark-list article {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 253, 247, 0.7);
+    padding: 11px;
+  }
+
+  .benchmark-list strong {
+    display: block;
+    font-size: 13px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .benchmark-list span,
+  .benchmark-list p {
+    color: var(--muted);
+    display: block;
+    font-size: 12px;
+    line-height: 1.35;
+    margin-top: 4px;
+  }
+
+  .lower {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .plain-panel {
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .plain-panel h2 {
+    flex: 0 0 auto;
+  }
+
+  .chips {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    gap: 8px;
+    min-width: 0;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .chips span {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 999px;
+    padding: 7px 10px;
+    color: var(--ink);
+    font-size: 12px;
+    line-height: 1;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  ul {
+    margin: 10px 0 0;
+    padding-left: 18px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  li + li {
+    margin-top: 6px;
+  }
+
+  .qa-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 15px;
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  label {
+    display: grid;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 0;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 82px;
+    resize: vertical;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 10px;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  button {
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: wait;
+    opacity: 0.7;
+  }
+
+  .answer {
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+    min-width: 0;
+  }
+
+  .answer p {
+    overflow-wrap: anywhere;
+  }
+
+  .answer p + p {
+    margin-top: 8px;
+  }
+
+  .answer h3 {
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.25;
+    margin: 0 0 8px;
+  }
+
+  .answer ol,
+  .answer ul {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.42;
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+
+  .answer li {
+    margin: 5px 0;
+  }
+
+  .answer strong {
+    color: var(--ink);
+  }
+
+  .limit-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 10px;
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .limit-note strong {
+    flex: 0 0 auto;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 2px 7px;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .answer-rows {
+    margin-top: 10px;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .answer-rows:empty {
+    display: none;
+  }
+
+  .answer-rows table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 10px;
+    line-height: 1.25;
+    table-layout: fixed;
+  }
+
+  .answer-rows th,
+  .answer-rows td {
+    border-bottom: 1px solid var(--line);
+    padding: 6px 5px;
+    text-align: left;
+    vertical-align: top;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .answer-rows th {
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  .answer-rows th:nth-child(1),
+  .answer-rows td:nth-child(1) {
+    width: 22%;
+  }
+
+  .answer-rows th:nth-child(2),
+  .answer-rows td:nth-child(2) {
+    width: 26%;
+  }
+
+  .answer-rows th:nth-child(3),
+  .answer-rows td:nth-child(3) {
+    width: 12%;
+  }
+
+  .answer-rows th:nth-child(4),
+  .answer-rows td:nth-child(4) {
+    width: 17%;
+  }
+
+  .answer-rows th:nth-child(5),
+  .answer-rows td:nth-child(5) {
+    width: 23%;
+  }
+
+  .compact {
+    gap: 8px;
+  }
+
+  .example {
+    border-color: var(--line);
+    background: transparent;
+    color: var(--muted);
+    text-align: left;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  @media (max-width: 1060px) {
+    .screen {
+      grid-template-columns: 1fr;
+    }
+
+    .qa {
+      border-left: 0;
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .qa-card:first-child {
+      grid-row: span 2;
+    }
+  }
+
+  @media (max-width: 780px) {
+    .content,
+    .qa {
+      padding: 18px;
+    }
+
+    .topbar,
+    .recommendation,
+    .benchmarks,
+    .lower,
+    .qa {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .benchmark-list {
+      grid-template-columns: 1fr;
+    }
+
+    .recommendation h2 {
+      font-size: 21px;
+    }
+
+    .metrics {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .table-head {
+      display: none;
+    }
+
+    .creator-row {
+      grid-template-columns: 34px minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .creator-row > p,
+    .score-cell {
+      grid-column: 2;
+    }
+  }
+
+  @media (max-width: 440px) {
+    .metrics {
+      grid-template-columns: 1fr;
+    }
+
+    h1 {
+      font-size: 24px;
+    }
+  }
+</style>
