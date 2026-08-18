@@ -434,7 +434,15 @@ function promptPayload(question: string, result: QueryResult) {
 }
 
 function systemPrompt() {
-  return "You answer a busy Head of Creator Partnerships. Use only the provided query result. Be concise, plain-English, and include one caveat. Do not invent follower counts, demographics, current creator status, or unsupported claims.";
+  return "You answer a busy Head of Creator Partnerships. Use only the provided query result. Be concise and plain-English. Do not include a caveat; the interface displays the caveat separately. Do not invent follower counts, demographics, current creator status, or unsupported claims.";
+}
+
+function answerWithoutDuplicateCaveat(text: string) {
+  return text
+    .split(/\n{2,}/)
+    .filter((paragraph) => !/^\s*\*{0,2}caveat\s*:/i.test(paragraph.trim()))
+    .join("\n\n")
+    .trim();
 }
 
 function providerPreference() {
@@ -471,7 +479,7 @@ async function summarizeWithOpenAI(question: string, result: QueryResult): Promi
   const text = data.output_text || data.output?.flatMap((item: any) => item.content ?? []).map((item: any) => item.text).join("\n");
   if (!text) return result;
 
-  return { ...result, answer: text, usedModel: true, modelProvider: "openai" };
+  return { ...result, answer: answerWithoutDuplicateCaveat(text), usedModel: true, modelProvider: "openai" };
 }
 
 async function summarizeWithAnthropic(question: string, result: QueryResult): Promise<QueryResult> {
@@ -515,7 +523,7 @@ async function summarizeWithAnthropic(question: string, result: QueryResult): Pr
     .join("\n");
   if (!text) return result;
 
-  return { ...result, answer: text, usedModel: true, modelProvider: "anthropic" };
+  return { ...result, answer: answerWithoutDuplicateCaveat(text), usedModel: true, modelProvider: "anthropic" };
 }
 
 export async function summarizeWithModel(question: string, result: QueryResult): Promise<QueryResult> {
