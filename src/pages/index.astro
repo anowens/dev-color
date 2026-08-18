@@ -117,7 +117,7 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
             <p class="eyebrow"></p>
             <p id="answer-text"></p>
             <div class="answer-rows" id="answer-rows" aria-label="Supporting rows"></div>
-            <p class="muted"></p>
+            <p class="limit-note"></p>
           </div>
         </section>
 
@@ -136,7 +136,7 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
       const question = document.querySelector("#question");
       const answer = document.querySelector("#answer-text");
       const answerTitle = document.querySelector(".answer .eyebrow");
-      const answerMeta = document.querySelector(".answer .muted");
+      const answerMeta = document.querySelector(".answer .limit-note");
       const answerRows = document.querySelector("#answer-rows");
       const examples = document.querySelectorAll(".example");
 
@@ -251,13 +251,13 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
           document.querySelector(".answer")?.removeAttribute("hidden");
           answerTitle.textContent = `${result.title} · ${providerLabel}`;
           answer.innerHTML = renderMarkdown(result.answer);
-          answerMeta.textContent = `Caveat: ${result.caveat} Suggested follow-up: ${result.suggestedFollowup}`;
+          answerMeta.innerHTML = `<strong>Limit</strong><span>${escapeHtml(result.caveat)}</span>`;
           renderRows(result.rows);
         } catch (error) {
           document.querySelector(".answer")?.removeAttribute("hidden");
           answerTitle.textContent = "Q&A unavailable";
           answer.innerHTML = renderMarkdown("I could not reach the local Q&A route. Try refreshing the app, then ask about creators, engagement, reach benchmarks, content themes, or limitations.");
-          answerMeta.textContent = "Caveat: the page is loaded, but the server endpoint did not respond.";
+          answerMeta.innerHTML = "<strong>Limit</strong><span>The page loaded, but the server endpoint did not respond.</span>";
           renderRows([]);
         } finally {
           answerButton.disabled = false;
@@ -710,6 +710,30 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
 
   .answer strong {
     color: var(--ink);
+  }
+
+  .limit-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 10px;
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .limit-note strong {
+    flex: 0 0 auto;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 2px 7px;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.2;
+    text-transform: uppercase;
   }
 
   .answer-rows {
