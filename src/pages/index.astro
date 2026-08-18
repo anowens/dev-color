@@ -69,7 +69,7 @@ const { prospects: creators, benchmarks, metrics, themes } = getDashboardData();
               <div>
                 <strong>{creator.name}</strong>
                 <span>{creator.niche}</span>
-                <em class={`creator-context ${creator.contextKind}`}>{creator.context}</em>
+                {creator.contextKind === "benchmark" && <em class={`creator-context ${creator.contextKind}`}>{creator.context}</em>}
               </div>
               <p>{creator.why}</p>
               <p class="muted">{creator.evidence}</p>

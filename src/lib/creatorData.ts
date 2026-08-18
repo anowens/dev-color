@@ -119,6 +119,12 @@ function formatPercent(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
 }
 
+function formatHashtag(value: string): string {
+  const hashtag = value.trim();
+  if (!hashtag) return "";
+  return hashtag.startsWith("#") ? hashtag : `#${hashtag}`;
+}
+
 function getContext(creator: { verified: boolean; views: number; videos: number; avgEngagementRate: number }) {
   if (creator.verified || creator.views >= 20_000_000) {
     return {
@@ -212,6 +218,7 @@ export function getCreators(): CreatorSummary[] {
       .map((row) => row.primary_hashtag)
       .filter(Boolean)
       .filter((hashtag, index, list) => list.indexOf(hashtag) === index)
+      .map(formatHashtag)
       .slice(0, 3);
     const verified = rows.some((row) => row.author_verified);
     const rawScore = bestVideoScore * 0.55 + avgVideoScore * 0.3 + consistencyBonus + avgEngagementRate * 0.05;
@@ -301,13 +308,12 @@ export function classifyQuestion(question: string): Intent {
 function compactCreator(creator: CreatorSummary) {
   return {
     creator: creator.name,
-    context: creator.context,
+    top_hashtags: creator.topHashtags.join(", ") || "none",
     videos: creator.videos,
     views: creator.views,
     interactions: creator.interactions,
     avg_engagement_rate: Number(creator.avgEngagementRate.toFixed(4)),
-    opportunity_score: creator.score,
-    top_hashtags: creator.topHashtags.join(", ") || "none"
+    opportunity_score: creator.score
   };
 }
 
